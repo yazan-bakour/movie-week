@@ -33,3 +33,24 @@ export interface OMDbSearchResponse {
   Response: string;
   Error?: string;
 }
+
+// WebSocket Event Types
+export interface WebSocketEvents {
+  // Server to Client events
+  'movies:initial': (movies: Movie[]) => void;
+  'movie:added': (movie: Movie) => void;
+  'movie:voted': (movie: Movie) => void;
+  'movie:winner': (winner: Winner) => void;
+  'winners:updated': (winners: Winner[]) => void;
+
+  // Client to Server events
+  'movies:get': () => void;
+}
+
+export type WebSocketEventName =
+  | 'movies:initial'
+  | 'movie:added'
+  | 'movie:voted'
+  | 'movie:winner'
+  | 'winners:updated'
+  | 'movies:get';

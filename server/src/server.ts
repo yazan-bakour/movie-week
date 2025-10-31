@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer, Server } from 'http';
 import { getDb } from './db/database';
 import { OMDbService } from './services/omdb';
+import { wsService } from './services/websocket';
 
 // Load environment variables
 dotenv.config();
@@ -71,6 +73,13 @@ app.get('/api/search', async (req: Request, res: Response) => {
 app.get('/api/movies', (req: Request, res: Response) => {
   try {
     const movies = db.getAllActiveMovies();
+
+    // Optionally broadcast initial movies to all connected clients
+    // This helps keep all clients in sync
+    if (wsService.isInitialized()) {
+      wsService.sendInitialMovies(movies);
+    }
+
     res.json({
       success: true,
       count: movies.length,
@@ -107,6 +116,10 @@ app.post('/api/movies', (req: Request, res: Response) => {
     }
 
     const movie = db.addMovie({ id, title, year, poster });
+
+    // Broadcast movie added event via WebSocket
+    wsService.broadcastMovieAdded(movie);
+
     res.status(201).json({
       success: true,
       data: movie
@@ -132,10 +145,28 @@ app.post('/api/movies/:id/vote', (req: Request, res: Response) => {
       });
     }
 
+    // Check if movie became a winner
+    const isWinner = movie.status === 'winner';
+
+    if (isWinner) {
+      // Get the latest winner entry and all winners
+      const winners = db.getAllWinners();
+      const latestWinner = winners[0]; // Winners are sorted by wonAt DESC
+
+      // Broadcast winner events
+      if (latestWinner) {
+        wsService.broadcastMovieWinner(latestWinner);
+        wsService.broadcastWinnersUpdated(winners);
+      }
+    } else {
+      // Broadcast regular vote event
+      wsService.broadcastMovieVoted(movie);
+    }
+
     res.json({
       success: true,
       data: movie,
-      isWinner: movie.status === 'winner'
+      isWinner
     });
   } catch (error) {
     res.status(500).json({
@@ -170,29 +201,39 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// Start server only if not in test mode
+// Create HTTP server and initialize WebSocket
+const httpServer = createServer(app);
 
-const server = DB_ENV === 'test' 
-  ? undefined
-  : app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database: ${DB_PATH}`);
-      console.log(`📍 API Endpoints:`);
-      console.log(`   GET  /api/search?q=<query>`);
-      console.log(`   GET  /api/movies`);
-      console.log(`   POST /api/movies`);
-      console.log(`   POST /api/movies/:id/vote`);
-      console.log(`   GET  /api/winners`);
-    });
+let server: Server | undefined;
+if (DB_ENV !== 'test') {
+  // Initialize WebSocket service
+  wsService.initialize(httpServer);
 
-// Graceful shutdown
-if (server) {
+  server = httpServer.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🔌 WebSocket server initialized`);
+    console.log(`📊 Database: ${DB_PATH}`);
+    console.log(`📍 API Endpoints:`);
+    console.log(`   GET  /api/search?q=<query>`);
+    console.log(`   GET  /api/movies`);
+    console.log(`   POST /api/movies`);
+    console.log(`   POST /api/movies/:id/vote`);
+    console.log(`   GET  /api/winners`);
+    console.log(`📡 WebSocket Events:`);
+    console.log(`   movies:initial - Initial movies list on connection`);
+    console.log(`   movie:added - New movie added`);
+    console.log(`   movie:voted - Movie received a vote`);
+    console.log(`   movie:winner - Movie reached 10 votes`);
+    console.log(`   winners:updated - Winners list updated`);
+  });
+
+  // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM signal received: closing HTTP server');
-    server.close(() => {
+    server?.close(() => {
       console.log('HTTP server closed');
     });
   });
 }
 
-export { app, db, server };
+export { app, db, httpServer, server };
