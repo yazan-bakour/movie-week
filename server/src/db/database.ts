@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { Movie, Winner } from '../types';
 
 export class MovieDatabase {
-  private db: Database.Database;
+  private readonly db: Database.Database;
 
   constructor(dbPath: string = './data/movies.db') {
     // Ensure data directory exists
@@ -86,7 +86,7 @@ export class MovieDatabase {
 
   incrementVote(id: string): Movie | null {
     const movie = this.getMovieById(id);
-    if (!movie || movie.status !== 'active') {
+    if (movie?.status !== 'active') {
       return null;
     }
 
@@ -138,9 +138,21 @@ export class MovieDatabase {
     return stmt.all() as Winner[];
   }
 
+  deleteMovie(id: string): boolean {
+    try {
+      const stmt = this.db.prepare("DELETE FROM movies WHERE id = ? AND status = 'active'");
+      const result = stmt.run(id);
+      console.log(`🔍 Delete movie ${id}: ${result.changes} rows affected`);
+      return result.changes > 0;
+    } catch (error) {
+      console.error(`🔴 Database error in deleteMovie(${id}):`, error);
+      throw error;
+    }
+  }
+
   // Utility methods
   clearAllMovies(): void {
-    this.db.exec('DELETE FROM movies');
+    this.db.exec("DELETE FROM movies WHERE status = 'active'");
   }
 
   clearAllWinners(): void {
@@ -161,9 +173,7 @@ export class MovieDatabase {
 let dbInstance: MovieDatabase | null = null;
 
 export function getDb(dbPath?: string): MovieDatabase {
-  if (!dbInstance) {
-    dbInstance = new MovieDatabase(dbPath);
-  }
+  dbInstance ??= new MovieDatabase(dbPath);
   return dbInstance;
 }
 

@@ -4,6 +4,20 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  box-sizing: border-box;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  #root {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  #root {
+    padding: 0.5rem;
+  }
 }
 
 .logo {
@@ -40,4 +54,56 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Header responsive styles */
+.header {
+  display: flex;
+  margin-bottom: 2rem;
+  justify-content: space-between;
+}
+
+.header-title {
+  text-align: left;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-stats {
+  text-align: left;
+  display: flex;
+  justify-content: flex-end;
+  align-items: end;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .header-title,
+  .header-stats {
+    width: 100%;
+  }
+  
+  .header-stats {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 1.8rem;
+  }
+  
+  .header-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }

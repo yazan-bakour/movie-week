@@ -31,11 +31,18 @@ export const addMovie = async (movie: {
   year: string;
   poster: string;
 }): Promise<Movie> => {
-  const response = await api.post<ApiResponse<Movie>>('/api/movies', movie);
-  if (!response.data.success) {
-    throw new Error(response.data.error || 'Failed to add movie');
+  try {
+    const response = await api.post<ApiResponse<Movie>>('/api/movies', movie);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to add movie');
+    }
+    return response.data.data!;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
   }
-  return response.data.data!;
 };
 
 // Vote for a movie
@@ -56,6 +63,22 @@ export const voteForMovie = async (id: string): Promise<{ movie: Movie; isWinner
 export const getWinners = async (): Promise<Winner[]> => {
   const response = await api.get<ApiResponse<Winner[]>>('/api/winners');
   return response.data.data || [];
+};
+
+// Delete a specific movie
+export const deleteMovie = async (id: string): Promise<void> => {
+  const response = await api.delete<ApiResponse<void>>(`/api/movies/${id}`);
+  if (!response.data.success) {
+    throw new Error(response.data.error || 'Failed to delete movie');
+  }
+};
+
+// Clear all active movies
+export const clearAllMovies = async (): Promise<void> => {
+  const response = await api.delete<ApiResponse<void>>('/api/movies');
+  if (!response.data.success) {
+    throw new Error(response.data.error || 'Failed to clear movies');
+  }
 };
 
 export default api;

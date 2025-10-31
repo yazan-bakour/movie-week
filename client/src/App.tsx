@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { getMovies, getWinners } from './services/api';
 import { MovieSearch } from './components/MovieSearch';
+import { MovieList } from './components/MovieList';
+import { WinnersList } from './components/WinnersList';
 import type { Movie, Winner } from './types';
+import popcornIcon from './assets/popcorn.svg';
 import './App.css';
 
 function App() {
@@ -10,48 +13,57 @@ function App() {
   const [winners, setWinners] = useState<Winner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load data function
+  const loadData = useCallback(async () => {
+    try {
+      const [moviesData, winnersData] = await Promise.all([
+        getMovies(),
+        getWinners(),
+      ]);
+      setMovies(moviesData);
+      setWinners(winnersData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    }
+  }, []);
+
   // Set up WebSocket listeners
   useWebSocket({
     onMovieAdded: (movie) => {
-      console.log('Movie added:', movie);
-      setMovies((prev) => [movie, ...prev]);
+      console.log('Movie added via WebSocket:', movie);
+      setMovies((prev) => {
+        // Check if movie already exists
+        if (prev.some((m) => m.id === movie.id)) {
+          return prev;
+        }
+        return [movie, ...prev];
+      });
     },
     onMovieVoted: (movie) => {
-      console.log('Movie voted:', movie);
+      console.log('Movie voted via WebSocket:', movie);
       setMovies((prev) =>
         prev.map((m) => (m.id === movie.id ? movie : m))
       );
     },
     onMovieWinner: (winner) => {
-      console.log('Movie winner:', winner);
+      console.log('Movie winner via WebSocket:', winner);
       setMovies((prev) => prev.filter((m) => m.id !== winner.movieId));
       setWinners((prev) => [winner, ...prev]);
     },
     onWinnersUpdated: (updatedWinners) => {
-      console.log('Winners updated:', updatedWinners);
+      console.log('Winners updated via WebSocket:', updatedWinners);
       setWinners(updatedWinners);
     },
   });
 
   // Load initial data
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [moviesData, winnersData] = await Promise.all([
-          getMovies(),
-          getWinners(),
-        ]);
-        setMovies(moviesData);
-        setWinners(winnersData);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    const init = async () => {
+      await loadData();
+      setIsLoading(false);
     };
-
-    loadData();
-  }, []);
+    init();
+  }, [loadData]);
 
   if (isLoading) {
     return (
@@ -64,16 +76,48 @@ function App() {
 
   return (
     <div className="app">
-      <div style={{display: 'flex', marginBottom: '2rem'}}>
-        <h1 style={{ textAlign: "left", width: '50%', margin: 0 }}>🎬 Movie of the Week</h1>
-        <div style={{ textAlign: "left", width: '50%', display: 'flex', justifyContent: 'flex-end', alignItems: 'end', gap: '1rem' }}>
+      {/* Header */}
+      <div className="header">
+        <h1 className="header-title">
+          <img src={popcornIcon} alt="Movie" style={{ width: '1em', height: '1em' }} />
+          Movie of the Week
+        </h1>
+        <div className="header-stats">
           <p>Active Movies: {movies.length}</p>
           <p>Past Winners: {winners.length}</p>
         </div>
       </div>
 
       {/* Movie Search Component */}
-      <MovieSearch />
+      <MovieSearch onMovieAdded={loadData} />
+
+      {/* Divider */}
+      {movies.length > 0 && (
+        <div
+          style={{
+            height: '1px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            margin: '2rem 0',
+          }}
+        />
+      )}
+
+      {/* Movie List Component */}
+      <MovieList movies={movies} onMovieVoted={loadData} onMoviesChanged={loadData} />
+
+      {/* Divider */}
+      {winners.length > 0 && movies.length > 0 && (
+        <div
+          style={{
+            height: '1px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            margin: '2rem 0',
+          }}
+        />
+      )}
+
+      {/* Winners List Component */}
+      {winners.length > 0 && <WinnersList winners={winners} />}
     </div>
   );
 }

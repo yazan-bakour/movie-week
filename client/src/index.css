@@ -31,6 +31,7 @@ body {
   display: flex;
   min-width: 320px;
   min-height: 100vh;
+  overflow-y: scroll;
 }
 
 h1 {
@@ -58,6 +59,38 @@ button:focus-visible {
 }
 input, pre {
   box-sizing: border-box;
+}
+
+/* Custom scrollbar for carousel */
+::-webkit-scrollbar {
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  ::-webkit-scrollbar {
+    height: 4px;
+  }
 }
 
 @media (prefers-color-scheme: light) {
