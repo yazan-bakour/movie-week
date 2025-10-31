@@ -218,6 +218,58 @@ describe('API Endpoints', () => {
     });
   });
 
+  describe('GET /api/search', () => {
+    it('should search for movies', async () => {
+      const response = await request(app)
+        .get('/api/search')
+        .query({ q: 'Matrix' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body).toHaveProperty('query', 'Matrix');
+      expect(response.body).toHaveProperty('results');
+      expect(Array.isArray(response.body.results)).toBe(true);
+    });
+
+    it('should return 400 when query parameter is missing', async () => {
+      const response = await request(app).get('/api/search');
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('required');
+    });
+
+    it('should handle pagination', async () => {
+      const response = await request(app)
+        .get('/api/search')
+        .query({ q: 'Star Wars', page: 2 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.page).toBe(2);
+    });
+
+    it('should return 400 for invalid page number', async () => {
+      const response = await request(app)
+        .get('/api/search')
+        .query({ q: 'Matrix', page: 'invalid' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should return empty results for non-existent movie', async () => {
+      const response = await request(app)
+        .get('/api/search')
+        .query({ q: 'xyzabc123nonexistent' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.results).toHaveLength(0);
+      expect(response.body.totalResults).toBe(0);
+    });
+  });
+
   describe('404 Handler', () => {
     it('should return 404 for unknown routes', async () => {
       const response = await request(app).get('/unknown-route');

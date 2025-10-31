@@ -109,6 +109,49 @@ GET /health
 }
 ```
 
+### Search Movies (OMDb API)
+```
+GET /api/search?q=<query>&page=<page_number>
+```
+
+**Query Parameters:**
+- `q` (required): Search query string
+- `page` (optional): Page number for pagination (default: 1)
+
+**Response:**
+```json
+{
+  "success": true,
+  "query": "Matrix",
+  "page": 1,
+  "totalResults": 63,
+  "results": [
+    {
+      "id": "tt0133093",
+      "title": "The Matrix",
+      "year": "1999",
+      "poster": "https://...",
+      "type": "movie"
+    },
+    {
+      "id": "tt0234215",
+      "title": "The Matrix Reloaded",
+      "year": "2003",
+      "poster": "https://...",
+      "type": "movie"
+    }
+  ]
+}
+```
+
+**Error Response (missing query):**
+```json
+{
+  "success": false,
+  "error": "Query parameter \"q\" is required"
+}
+```
+
 ### Get All Active Movies
 ```
 GET /api/movies
@@ -243,6 +286,11 @@ server/
 
 ## Testing Locally with curl
 
+### Search for movies
+```bash
+curl "http://localhost:3000/api/search?q=Matrix"
+```
+
 ### Add a movie
 ```bash
 curl -X POST http://localhost:3000/api/movies \
@@ -312,7 +360,7 @@ For persistent storage on Railway, consider using:
 ## Next Steps
 
 - [x] Add production API routes (`/api/movies`, `/api/winners`, etc.)
-- [ ] Implement OMDb API integration for movie search
+- [x] Implement OMDb API integration for movie search
 - [ ] Add rate limiting and vote throttling
 - [ ] Implement username/session management
 - [ ] Add WebSocket or polling for live updates

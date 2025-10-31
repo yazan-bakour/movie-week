@@ -1,6 +1,5 @@
 import { MovieDatabase } from '../src/db/database';
 import fs from 'fs';
-import path from 'path';
 
 describe('MovieDatabase', () => {
   let db: MovieDatabase;

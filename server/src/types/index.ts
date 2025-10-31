@@ -18,9 +18,18 @@ export interface Winner {
   wonAt: number; // timestamp
 }
 
-export interface MovieSearchResult {
+// OMDb API Response Types
+export interface OMDbMovieSearchResult {
   imdbID: string;
   Title: string;
   Year: string;
   Poster: string;
+  Type: string;
+}
+
+export interface OMDbSearchResponse {
+  Search?: OMDbMovieSearchResult[];
+  totalResults?: string;
+  Response: string;
+  Error?: string;
 }
