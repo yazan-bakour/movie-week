@@ -1,0 +1,40 @@
+.header {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerInfo {
+  text-align: left;
+}
+
+.title {
+  margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.clearButton {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.clearButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.movieItem {
+  position: relative;
+}

@@ -86,7 +86,7 @@ function App() {
       {/* Header */}
       <div className="header">
         <h1 className="header-title">
-          <img src={popcornIcon} alt="Movie" style={{ width: '1em', height: '1em' }} />
+          <img src={popcornIcon} alt="Movie" className="icon-sm" />
           Movie of the Week
         </h1>
         <div className="header-stats">
@@ -99,29 +99,13 @@ function App() {
       <MovieSearch />
 
       {/* Divider */}
-      {movies.length > 0 && (
-        <div
-          style={{
-            height: '1px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            margin: '2rem 0',
-          }}
-        />
-      )}
+      {movies.length > 0 && <div className="divider" />}
 
       {/* Movie List Component */}
       <MovieList movies={movies} />
 
       {/* Divider */}
-      {winners.length > 0 && movies.length > 0 && (
-        <div
-          style={{
-            height: '1px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            margin: '2rem 0',
-          }}
-        />
-      )}
+      {winners.length > 0 && movies.length > 0 && <div className="divider" />}
 
       {/* Winners List Component */}
       {winners.length > 0 && <WinnersList winners={winners} />}

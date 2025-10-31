@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getErrorMessage } from '../utils/errorHandlers';
 import type { Movie, Winner, ApiResponse, SearchApiResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -38,10 +39,7 @@ export const addMovie = async (movie: {
     }
     return response.data.data!;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    }
-    throw error;
+    throw new Error(getErrorMessage(error, 'Failed to add movie'));
   }
 };
 

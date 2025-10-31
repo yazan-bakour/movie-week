@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { searchMovies, addMovie } from '../services/api';
+import { getErrorMessage } from '../utils/errorHandlers';
+import { PosterImage } from './shared/PosterImage';
 import type { SearchResult } from '../types';
 import closeIcon from '../assets/circle-x.svg';
+import styles from './MovieSearch.module.css';
 
 interface MovieSearchProps {
   onMovieAdded?: () => void;
@@ -42,7 +45,7 @@ export const MovieSearch = ({ onMovieAdded }: MovieSearchProps) => {
           setResults([]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to search movies');
+        setError(getErrorMessage(err, 'Failed to search movies'));
         setResults([]);
       } finally {
         setIsLoading(false);
@@ -85,7 +88,7 @@ export const MovieSearch = ({ onMovieAdded }: MovieSearchProps) => {
         onMovieAdded();
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add movie';
+      const errorMessage = getErrorMessage(err, 'Failed to add movie');
       if (errorMessage.includes('already won')) {
         setError('This movie has already won! Check the Past Winners section.');
       } else {
@@ -97,52 +100,28 @@ export const MovieSearch = ({ onMovieAdded }: MovieSearchProps) => {
   };
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <div style={{ marginBottom: '0.2rem' }}>
-        <h2 style={{textAlign: 'left'}}>Search Movies</h2>
-        <div style={{ position: 'relative' }}>
+    <div className={styles.container}>
+      <div className={styles.inputWrapper}>
+        <h2 className={`${styles.title} text-left`}>Search Movies</h2>
+        <div className={styles.searchContainer}>
           <input
             ref={inputRef}
             type="text"
             placeholder="Type to search movies..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              paddingRight: query ? '3rem' : '0.75rem',
-              fontSize: '1rem',
-              border: '2px solid #ccc',
-              borderRadius: '4px',
-              boxSizing: 'border-box',
-            }}
+            className={`${styles.searchInput} ${query ? styles.withClearButton : ''}`}
           />
           {query && (
             <button
               onClick={handleClearSearch}
-              style={{
-                position: 'absolute',
-                right: '0.5rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '0.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 0.6,
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+              className={`${styles.clearButton} btn-icon`}
               title="Clear search"
             >
               <img
                 src={closeIcon}
                 alt="Clear"
-                style={{ width: '20px', height: '20px' }}
+                className="icon-md"
               />
             </button>
           )}
@@ -151,21 +130,21 @@ export const MovieSearch = ({ onMovieAdded }: MovieSearchProps) => {
 
       {/* Loading state */}
       {isLoading && (
-        <div style={{ color: '#666' }}>
+        <div className={styles.loadingText}>
           Searching...
         </div>
       )}
 
       {/* Error state */}
       {error && (
-        <div style={{ color: 'red', marginTop: '1rem' }}>
+        <div className="text-error mt-1">
           Error: {error}
         </div>
       )}
 
       {/* Results info */}
       {!isLoading && query && (
-        <div style={{ marginBottom: '2rem', color: '#666', textAlign: 'left', fontStyle: 'italic' }}>
+        <div className={`${styles.resultsInfo} text-left text-italic`}>
           {totalResults > 0
             ? `Found ${totalResults} results (showing ${results.length})`
             : 'No results found'}
@@ -175,91 +154,30 @@ export const MovieSearch = ({ onMovieAdded }: MovieSearchProps) => {
       {/* Display results as clickable cards */}
       {results.length > 0 && (
         <div>
-          <h3 style={{ textAlign: 'left', marginBottom: '1rem' }}>
+          <h3 className={`${styles.resultsHeader} text-left mb-1`}>
             Click a movie to add it:
           </h3>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '1rem',
-            }}
-          >
+          <div className="grid grid-auto-fill gap-1">
             {results.map((movie) => (
               <button
                 key={movie.id}
                 onClick={() => handleAddMovie(movie)}
                 disabled={addingMovieId === movie.id}
-                style={{
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '8px',
-                  padding: '0',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  cursor: addingMovieId === movie.id ? 'not-allowed' : 'pointer',
-                  opacity: addingMovieId === movie.id ? 0.5 : 1,
-                  transition: 'all 0.2s',
-                  overflow: 'hidden',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => {
-                  if (addingMovieId !== movie.id) {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.borderColor = '#646cff';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                }}
+                className={styles.movieButton}
               >
                 {/* Poster */}
-                {movie.poster && movie.poster !== 'N/A' ? (
-                  <img
-                    src={movie.poster}
-                    alt={movie.title}
-                    style={{
-                      width: '100%',
-                      height: '220px',
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '220px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#666',
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    No Poster
-                  </div>
-                )}
+                <PosterImage
+                  src={movie.poster}
+                  alt={movie.title}
+                  height="220px"
+                />
 
                 {/* Movie Info */}
-                <div style={{ padding: '0.75rem' }}>
-                  <h4
-                    style={{
-                      margin: '0 0 0.25rem 0',
-                      fontSize: '0.9rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                <div className={styles.movieInfo}>
+                  <h4 className={styles.movieTitle}>
                     {movie.title}
                   </h4>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: '0.8rem',
-                      color: '#888',
-                    }}
-                  >
+                  <p className={styles.movieYear}>
                     {movie.year}
                   </p>
                 </div>

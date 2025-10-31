@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { MovieCard } from './MovieCard';
 import { clearAllMovies } from '../services/api';
+import { getErrorMessage } from '../utils/errorHandlers';
 import type { Movie } from '../types';
 import medalIcon from '../assets/medal.svg';
 import trashIcon from '../assets/trash.svg';
+import styles from './MovieList.module.css';
 
 interface MovieListProps {
   movies: Movie[];
@@ -26,7 +28,7 @@ export const MovieList = ({ movies, onMovieVoted, onMoviesChanged }: MovieListPr
         onMoviesChanged();
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to clear movies');
+      alert(getErrorMessage(err, 'Failed to clear movies'));
     } finally {
       setIsClearing(false);
     }
@@ -34,8 +36,8 @@ export const MovieList = ({ movies, onMovieVoted, onMoviesChanged }: MovieListPr
 
   if (movies.length === 0) {
     return (
-      <div style={{ textAlign: 'left', padding: '2rem 0' }}>
-        <p style={{ color: '#888', fontStyle: 'italic' }}>
+      <div className="empty-state">
+        <p className="text-muted text-italic">
           No active movies yet. Search and add a movie to get started!
         </p>
       </div>
@@ -48,12 +50,12 @@ export const MovieList = ({ movies, onMovieVoted, onMoviesChanged }: MovieListPr
 
   return (
     <div>
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ textAlign: 'left' }}>
-          <h2 style={{ margin: '0 0 0.5rem 0' }}>
+      <div className={styles.header}>
+        <div className={styles.headerInfo}>
+          <h2 className={styles.title}>
             Current Standings ({movies.length} {movies.length === 1 ? 'movie' : 'movies'})
           </h2>
-          <p style={{ color: '#888', fontSize: '0.9rem', margin: 0 }}>
+          <p className={styles.subtitle}>
             First movie to reach 10 votes wins!
           </p>
         </div>
@@ -62,18 +64,7 @@ export const MovieList = ({ movies, onMovieVoted, onMoviesChanged }: MovieListPr
         <button
           onClick={handleClearAll}
           disabled={isClearing}
-          style={{
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.6rem 1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            cursor: isClearing ? 'not-allowed' : 'pointer',
-            opacity: isClearing ? 0.5 : 1,
-            fontSize: '0.9rem',
-            color: 'white',
-          }}
+          className={styles.clearButton}
           title="Remove all movies"
         >
           <img
@@ -86,35 +77,12 @@ export const MovieList = ({ movies, onMovieVoted, onMoviesChanged }: MovieListPr
       </div>
 
       {/* Movies Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-          gap: '1.5rem',
-        }}
-      >
+      <div className="grid grid-auto-fill-250 gap-1-5">
         {movies.map((movie) => (
-          <div key={movie.id} style={{ position: 'relative' }}>
+          <div key={movie.id} className={styles.movieItem}>
             {/* Leader Badge */}
             {movie.id === leaderId && movie.votes > 0 && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '-10px',
-                  left: '-10px',
-                  backgroundColor: '#646cff',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '40px',
-                  height: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 10,
-                  border: '2px solid #242424',
-                }}
-                title="Current Leader"
-              >
+              <div className="badge badge-leader" title="Current Leader">
                 <img src={medalIcon} alt="Leader" style={{ width: '24px', height: '24px' }} />
               </div>
             )}

@@ -20,40 +20,225 @@
   }
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* ========== Common Utilities ========== */
+
+/* Text alignment */
+.text-left {
+  text-align: left;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.text-center {
+  text-align: center;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Flex utilities */
+.flex {
+  display: flex;
 }
 
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.align-start {
+  align-items: flex-start;
+}
+
+.align-end {
+  align-items: flex-end;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-0-5 {
+  gap: 0.5rem;
+}
+
+.gap-1 {
+  gap: 1rem;
+}
+
+.gap-1-5 {
+  gap: 1.5rem;
+}
+
+.gap-2 {
+  gap: 2rem;
+}
+
+/* Spacing utilities */
+.mb-0-5 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 2rem;
+}
+
+.mt-1 {
+  margin-top: 1rem;
+}
+
+.p-2 {
+  padding: 2rem 0;
+}
+
+/* Cards */
 .card {
-  padding: 2em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.read-the-docs {
+/* Grids */
+.grid {
+  display: grid;
+}
+
+.grid-auto-fill {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.grid-auto-fill-250 {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+/* Buttons */
+.btn-icon {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.btn-icon-round {
+  border-radius: 50%;
+}
+
+.btn-delete {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  width: 32px;
+  height: 32px;
+  z-index: 10;
+}
+
+/* Badges */
+.badge {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #242424;
+}
+
+.badge-leader {
+  top: -10px;
+  left: -10px;
+  background-color: #646cff;
+  color: white;
+  width: 40px;
+  height: 40px;
+  z-index: 10;
+}
+
+.badge-rank {
+  top: 0;
+  right: 0;
+  background-color: #1a1a1a;
+  padding: 5px 3px 2px;
+}
+
+/* Dividers */
+.divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 2rem 0;
+}
+
+/* Text colors */
+.text-muted {
   color: #888;
+}
+
+.text-italic {
+  font-style: italic;
+}
+
+.text-error {
+  color: red;
+}
+
+/* Empty states */
+.empty-state {
+  text-align: left;
+  padding: 2rem 0;
+}
+
+/* Images */
+.icon-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.icon-md {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.icon-lg {
+  width: 2.3rem;
+  height: 2.3rem;
+}
+
+/* Position utilities */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+/* Opacity */
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.opacity-100 {
+  opacity: 1;
 }
 
 /* Header responsive styles */

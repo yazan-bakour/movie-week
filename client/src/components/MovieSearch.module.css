@@ -1,0 +1,93 @@
+.container {
+  margin-bottom: 2rem;
+}
+
+.inputWrapper {
+  margin-bottom: 0.2rem;
+}
+
+.title {
+  text-align: left;
+}
+
+.searchContainer {
+  position: relative;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.searchInput.withClearButton {
+  padding-right: 3rem;
+}
+
+.clearButton {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.loadingText {
+  color: #666;
+}
+
+.resultsInfo {
+  margin-bottom: 2rem;
+  color: #666;
+  text-align: left;
+  font-style: italic;
+}
+
+.resultsHeader {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.movieButton {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.movieButton:not(:disabled) {
+  cursor: pointer;
+}
+
+.movieButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.movieButton:hover:not(:disabled) {
+  transform: scale(1.05);
+  border-color: #646cff;
+}
+
+.movieInfo {
+  padding: 0.75rem;
+}
+
+.movieTitle {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movieYear {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #888;
+}
