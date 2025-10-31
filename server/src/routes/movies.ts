@@ -105,6 +105,11 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
   }
 
   console.log(`✅ Movie deleted: ${id}`);
+
+  // Broadcast updated movie list via WebSocket
+  const movies = db.getAllActiveMovies();
+  wsService.sendInitialMovies(movies);
+
   sendSuccess(res, undefined, { message: 'Movie deleted successfully' });
 }));
 
@@ -113,6 +118,10 @@ router.delete('/', asyncHandler(async (req: Request, res: Response) => {
   console.log('🗑️  DELETE request to clear all movies');
   db.clearAllMovies();
   console.log('✅ All active movies cleared');
+
+  // Broadcast empty movie list via WebSocket
+  wsService.sendInitialMovies([]);
+
   sendSuccess(res, undefined, { message: 'All active movies cleared' });
 }));
 

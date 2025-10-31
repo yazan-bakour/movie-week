@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { getMovies, getWinners } from './services/api';
 import { MovieSearch } from './components/MovieSearch';
@@ -12,23 +12,14 @@ function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Load data function
-  const loadData = useCallback(async () => {
-    try {
-      const [moviesData, winnersData] = await Promise.all([
-        getMovies(),
-        getWinners(),
-      ]);
-      setMovies(moviesData);
-      setWinners(winnersData);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    }
-  }, []);
+  const hasLoadedInitialData = useRef(false);
 
   // Set up WebSocket listeners
   useWebSocket({
+    onMoviesInitial: (movies) => {
+      console.log('Movies updated via WebSocket:', movies);
+      setMovies(movies);
+    },
     onMovieAdded: (movie) => {
       console.log('Movie added via WebSocket:', movie);
       setMovies((prev) => {
@@ -56,14 +47,30 @@ function App() {
     },
   });
 
-  // Load initial data
+  // Load initial data (only once, even in React StrictMode)
   useEffect(() => {
+    if (hasLoadedInitialData.current) {
+      return;
+    }
+
+    hasLoadedInitialData.current = true;
+
     const init = async () => {
-      await loadData();
-      setIsLoading(false);
+      try {
+        const [moviesData, winnersData] = await Promise.all([
+          getMovies(),
+          getWinners(),
+        ]);
+        setMovies(moviesData);
+        setWinners(winnersData);
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     init();
-  }, [loadData]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -89,7 +96,7 @@ function App() {
       </div>
 
       {/* Movie Search Component */}
-      <MovieSearch onMovieAdded={loadData} />
+      <MovieSearch />
 
       {/* Divider */}
       {movies.length > 0 && (
@@ -103,7 +110,7 @@ function App() {
       )}
 
       {/* Movie List Component */}
-      <MovieList movies={movies} onMovieVoted={loadData} onMoviesChanged={loadData} />
+      <MovieList movies={movies} />
 
       {/* Divider */}
       {winners.length > 0 && movies.length > 0 && (

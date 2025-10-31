@@ -15,7 +15,8 @@ class WebSocketService {
   private socket: Socket | null = null;
 
   connect(): Socket {
-    if (this.socket?.connected) {
+    // Return existing socket if already exists (connected or not)
+    if (this.socket) {
       return this.socket;
     }
 
@@ -23,6 +24,8 @@ class WebSocketService {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
+      transports: ['websocket'], // Use WebSocket only, no polling
+      upgrade: false, // Don't upgrade from polling to websocket
     });
 
     this.socket.on('connect', () => {
