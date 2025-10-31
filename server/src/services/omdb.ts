@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { OMDbSearchResponse, OMDbMovieSearchResult } from '../types';
+import { OMDbSearchResponse, OMDbMovieSearchResult, OMDbMovieDetail } from '../types';
 
 const OMDB_API_URL = 'http://www.omdbapi.com/';
 
@@ -73,7 +73,7 @@ export class OMDbService {
    * @param imdbId - IMDb ID (e.g., "tt0111161")
    * @returns Promise with movie details
    */
-  static async getMovieById(imdbId: string): Promise<any> {
+  static async getMovieById(imdbId: string): Promise<OMDbMovieDetail> {
     const apiKey = getApiKey();
 
     if (!imdbId?.startsWith('tt')) {
@@ -81,7 +81,7 @@ export class OMDbService {
     }
 
     try {
-      const response = await axios.get(OMDB_API_URL, {
+      const response = await axios.get<OMDbMovieDetail>(OMDB_API_URL, {
         params: {
           apikey: apiKey,
           i: imdbId,

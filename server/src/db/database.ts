@@ -3,8 +3,65 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Movie, Winner } from '../types';
 
+// Simple LRU Cache implementation
+class LRUCache<K, V> {
+  private readonly cache = new Map<K, V>();
+  private readonly maxSize: number;
+
+  constructor(maxSize: number = 100) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    if (!this.cache.has(key)) return undefined;
+    // Move to end (most recently used)
+    const value = this.cache.get(key)!;
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    // Delete if exists to refresh position
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    // Remove oldest if over limit
+    if (this.cache.size > this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+  }
+
+  delete(key: K): void {
+    this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
 export class MovieDatabase {
   private readonly db: Database.Database;
+
+  // Prepared statement cache
+  private readonly statements: {
+    addMovie?: Database.Statement;
+    getMovieById?: Database.Statement;
+    getAllActiveMovies?: Database.Statement;
+    updateVotes?: Database.Statement;
+    updateMovieStatus?: Database.Statement;
+    addWinner?: Database.Statement;
+    getAllWinners?: Database.Statement;
+    deleteMovie?: Database.Statement;
+  } = {};
+
+  // In-memory cache
+  private activeMoviesCache: Movie[] | null = null;
+  private winnersCache: Winner[] | null = null;
+  private readonly movieByIdCache = new LRUCache<string, Movie | undefined>(50);
 
   constructor(dbPath: string = './data/movies.db') {
     // Ensure data directory exists
@@ -14,7 +71,54 @@ export class MovieDatabase {
     }
 
     this.db = new Database(dbPath);
+
+    // Enable WAL mode for better concurrency
+    this.db.pragma('journal_mode = WAL');
+
+    // Optimize for performance
+    this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('cache_size = -64000'); // 64MB cache
+
     this.initializeSchema();
+    this.prepareStatements();
+  }
+
+  private prepareStatements(): void {
+    this.statements.addMovie = this.db.prepare(`
+      INSERT INTO movies (id, title, year, poster, votes, addedAt, status)
+      VALUES (?, ?, ?, ?, 0, ?, 'active')
+    `);
+
+    this.statements.getMovieById = this.db.prepare(
+      'SELECT * FROM movies WHERE id = ?'
+    );
+
+    this.statements.getAllActiveMovies = this.db.prepare(`
+      SELECT * FROM movies
+      WHERE status = 'active'
+      ORDER BY votes DESC, addedAt ASC
+    `);
+
+    this.statements.updateVotes = this.db.prepare(
+      'UPDATE movies SET votes = ? WHERE id = ?'
+    );
+
+    this.statements.updateMovieStatus = this.db.prepare(`
+      UPDATE movies SET status = 'winner', votes = votes + 1 WHERE id = ?
+    `);
+
+    this.statements.addWinner = this.db.prepare(`
+      INSERT INTO winners (movieId, title, year, poster, finalVotes, wonAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    this.statements.getAllWinners = this.db.prepare(
+      'SELECT * FROM winners ORDER BY wonAt DESC'
+    );
+
+    this.statements.deleteMovie = this.db.prepare(
+      "DELETE FROM movies WHERE id = ? AND status = 'active'"
+    );
   }
 
   private initializeSchema(): void {
@@ -52,36 +156,59 @@ export class MovieDatabase {
     `);
   }
 
+  // Cache invalidation helper
+  private invalidateCache(): void {
+    this.activeMoviesCache = null;
+    this.movieByIdCache.clear();
+  }
+
   // Movie operations
   addMovie(movie: Omit<Movie, 'votes' | 'addedAt' | 'status'>): Movie {
-    const stmt = this.db.prepare(`
-      INSERT INTO movies (id, title, year, poster, votes, addedAt, status)
-      VALUES (?, ?, ?, ?, 0, ?, 'active')
-    `);
-
     const addedAt = Date.now();
-    stmt.run(movie.id, movie.title, movie.year, movie.poster, addedAt);
+    this.statements.addMovie!.run(movie.id, movie.title, movie.year, movie.poster, addedAt);
 
-    return {
+    const newMovie: Movie = {
       ...movie,
       votes: 0,
       addedAt,
       status: 'active'
     };
+
+    // Invalidate cache
+    this.invalidateCache();
+
+    return newMovie;
   }
 
   getMovieById(id: string): Movie | undefined {
-    const stmt = this.db.prepare('SELECT * FROM movies WHERE id = ?');
-    return stmt.get(id) as Movie | undefined;
+    // Check cache first
+    const cached = this.movieByIdCache.get(id);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Query database
+    const movie = this.statements.getMovieById!.get(id) as Movie | undefined;
+
+    // Cache the result (even if undefined)
+    this.movieByIdCache.set(id, movie);
+
+    return movie;
   }
 
   getAllActiveMovies(): Movie[] {
-    const stmt = this.db.prepare(`
-      SELECT * FROM movies
-      WHERE status = 'active'
-      ORDER BY votes DESC, addedAt ASC
-    `);
-    return stmt.all() as Movie[];
+    // Return cached if available
+    if (this.activeMoviesCache !== null) {
+      return this.activeMoviesCache;
+    }
+
+    // Query database
+    const movies = this.statements.getAllActiveMovies!.all() as Movie[];
+
+    // Cache the result
+    this.activeMoviesCache = movies;
+
+    return movies;
   }
 
   incrementVote(id: string): Movie | null {
@@ -97,10 +224,14 @@ export class MovieDatabase {
       return this.declareWinner(id);
     }
 
-    const stmt = this.db.prepare('UPDATE movies SET votes = ? WHERE id = ?');
-    stmt.run(newVotes, id);
+    this.statements.updateVotes!.run(newVotes, id);
 
-    return { ...movie, votes: newVotes };
+    const updatedMovie = { ...movie, votes: newVotes };
+
+    // Invalidate cache
+    this.invalidateCache();
+
+    return updatedMovie;
   }
 
   private declareWinner(id: string): Movie {
@@ -110,17 +241,10 @@ export class MovieDatabase {
     }
 
     // Update movie status
-    const updateStmt = this.db.prepare(`
-      UPDATE movies SET status = 'winner', votes = votes + 1 WHERE id = ?
-    `);
-    updateStmt.run(id);
+    this.statements.updateMovieStatus!.run(id);
 
     // Add to winners table
-    const insertStmt = this.db.prepare(`
-      INSERT INTO winners (movieId, title, year, poster, finalVotes, wonAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    insertStmt.run(
+    this.statements.addWinner!.run(
       movie.id,
       movie.title,
       movie.year,
@@ -129,20 +253,41 @@ export class MovieDatabase {
       Date.now()
     );
 
-    return { ...movie, votes: movie.votes + 1, status: 'winner' };
+    const winnerMovie = { ...movie, votes: movie.votes + 1, status: 'winner' as const };
+
+    // Invalidate both caches
+    this.invalidateCache();
+    this.winnersCache = null;
+
+    return winnerMovie;
   }
 
   // Winner operations
   getAllWinners(): Winner[] {
-    const stmt = this.db.prepare('SELECT * FROM winners ORDER BY wonAt DESC');
-    return stmt.all() as Winner[];
+    // Return cached if available
+    if (this.winnersCache !== null) {
+      return this.winnersCache;
+    }
+
+    // Query database
+    const winners = this.statements.getAllWinners!.all() as Winner[];
+
+    // Cache the result
+    this.winnersCache = winners;
+
+    return winners;
   }
 
   deleteMovie(id: string): boolean {
     try {
-      const stmt = this.db.prepare("DELETE FROM movies WHERE id = ? AND status = 'active'");
-      const result = stmt.run(id);
+      const result = this.statements.deleteMovie!.run(id);
       console.log(`🔍 Delete movie ${id}: ${result.changes} rows affected`);
+
+      if (result.changes > 0) {
+        // Invalidate cache
+        this.invalidateCache();
+      }
+
       return result.changes > 0;
     } catch (error) {
       console.error(`🔴 Database error in deleteMovie(${id}):`, error);
@@ -153,10 +298,16 @@ export class MovieDatabase {
   // Utility methods
   clearAllMovies(): void {
     this.db.exec("DELETE FROM movies WHERE status = 'active'");
+
+    // Invalidate cache
+    this.invalidateCache();
   }
 
   clearAllWinners(): void {
     this.db.exec('DELETE FROM winners');
+
+    // Invalidate winners cache
+    this.winnersCache = null;
   }
 
   close(): void {

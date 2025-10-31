@@ -1,49 +1,40 @@
 import { Router, Request, Response } from 'express';
 import { OMDbService } from '../services/omdb';
+import { asyncHandler } from '../middleware/errorHandler';
+import { sendBadRequest } from '../utils/apiResponse';
+import { validateQueryParam, validatePageNumber } from '../utils/validators';
+import { transformOMDbMovies } from '../utils/transformers';
 
 const router = Router();
 
 // Search movies via OMDb API
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const { q, page } = req.query;
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  const { q, page } = req.query;
 
-    if (!q || typeof q !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: 'Query parameter "q" is required'
-      });
-    }
-
-    const pageNumber = page ? Number.parseInt(page as string, 10) : 1;
-    if (Number.isNaN(pageNumber) || pageNumber < 1) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid page number'
-      });
-    }
-
-    const { results, totalResults } = await OMDbService.searchMovies(q, pageNumber);
-
-    res.json({
-      success: true,
-      query: q,
-      page: pageNumber,
-      totalResults,
-      results: results.map(movie => ({
-        id: movie.imdbID,
-        title: movie.Title,
-        year: movie.Year,
-        poster: movie.Poster === 'N/A' ? null : movie.Poster,
-        type: movie.Type
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to search movies'
-    });
+  // Validate query parameter
+  const queryValidation = validateQueryParam(q);
+  if (!queryValidation.isValid) {
+    return sendBadRequest(res, queryValidation.error!);
   }
-});
+
+  // Validate page number
+  const pageValidation = validatePageNumber(page);
+  if (!pageValidation.isValid) {
+    return sendBadRequest(res, pageValidation.error!);
+  }
+
+  const pageNumber = pageValidation.value!;
+  const queryString = q as string;
+
+  const { results, totalResults } = await OMDbService.searchMovies(queryString, pageNumber);
+
+  res.json({
+    success: true,
+    query: queryString,
+    page: pageNumber,
+    totalResults,
+    results: transformOMDbMovies(results),
+  });
+}));
 
 export default router;
