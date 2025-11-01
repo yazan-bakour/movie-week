@@ -127,7 +127,6 @@
 /* Buttons */
 .btn-icon {
   border: none;
-  background: transparent;
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
@@ -221,6 +220,10 @@
 .icon-lg {
   width: 2.3rem;
   height: 2.3rem;
+}
+.icon-xl {
+  width: 3.3rem;
+  height: 3.3rem;
 }
 
 /* Position utilities */
