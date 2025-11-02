@@ -297,7 +297,7 @@ export class MovieDatabase {
 
   // Utility methods
   clearAllMovies(): void {
-    this.db.exec("DELETE FROM movies WHERE status = 'active'");
+    this.db.exec("DELETE FROM movies");
 
     // Invalidate cache
     this.invalidateCache();

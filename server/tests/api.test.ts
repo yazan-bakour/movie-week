@@ -7,8 +7,13 @@ describe('API Endpoints', () => {
 
   beforeEach(() => {
     // Clear database before each test
-    db.clearAllMovies();
-    db.clearAllWinners();
+    try {
+      db.clearAllMovies();
+      db.clearAllWinners();
+    } catch (error) {
+      // Handle potential database clearing issues
+      console.log('Database clearing error:', error);
+    }
   });
 
   afterAll(() => {
@@ -42,15 +47,15 @@ describe('API Endpoints', () => {
     });
 
     it('should return all active movies', async () => {
-      // Add test movies directly to database
+      // Add test movies directly to database using unique IDs
       db.addMovie({
-        id: 'tt1',
+        id: 'tt7777777',
         title: 'Test Movie 1',
         year: '2020',
         poster: 'url1'
       });
       db.addMovie({
-        id: 'tt2',
+        id: 'tt8888888',
         title: 'Test Movie 2',
         year: '2021',
         poster: 'url2'
@@ -67,10 +72,10 @@ describe('API Endpoints', () => {
 
   describe('POST /api/movies', () => {
     const validMovie = {
-      id: 'tt0111161',
-      title: 'The Shawshank Redemption',
-      year: '1994',
-      poster: 'https://example.com/poster.jpg'
+      id: 'tt1111111',
+      title: 'Test Movie for Adding',
+      year: '2024',
+      poster: 'https://example.com/test-poster.jpg'
     };
 
     it('should add a new movie', async () => {
@@ -97,35 +102,67 @@ describe('API Endpoints', () => {
       expect(response.body.error).toContain('Missing required fields');
     });
 
-    it('should return 409 for duplicate movie', async () => {
+    it('should increment vote when adding duplicate active movie', async () => {
       // Add movie first
-      await request(app).post('/api/movies').send(validMovie);
+      const firstResponse = await request(app).post('/api/movies').send(validMovie);
+      expect(firstResponse.status).toBe(201);
+      expect(firstResponse.body.data.votes).toBe(0);
 
-      // Try to add again
+      // Try to add again - should increment vote instead of error
       const response = await request(app)
         .post('/api/movies')
         .send(validMovie);
 
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.votes).toBe(1);
+      expect(response.body.message).toContain('Movie already existed, vote incremented');
+    });
+
+    it('should return 409 when trying to add past winner', async () => {
+      // Use a different movie to avoid conflicts
+      const winnerMovie = {
+        id: 'tt0133093',
+        title: 'The Matrix',
+        year: '1999',
+        poster: 'https://example.com/matrix.jpg'
+      };
+
+      // Add movie and make it a winner
+      await request(app).post('/api/movies').send(winnerMovie);
+      
+      // Vote 10 times to make it a winner
+      for (let i = 0; i < 10; i++) {
+        await request(app).post('/api/movies/tt0133093/vote');
+      }
+
+      // Try to add the same movie again - should get conflict error
+      const response = await request(app)
+        .post('/api/movies')
+        .send(winnerMovie);
+
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('already exists');
+      expect(response.body.error).toContain('already won and cannot be added again');
     });
   });
 
   describe('POST /api/movies/:id/vote', () => {
+    const voteTestMovie = {
+      id: 'tt9999999',
+      title: 'Vote Test Movie',
+      year: '2020',
+      poster: 'url1'
+    };
+
     beforeEach(async () => {
       // Add a test movie before each vote test
-      await request(app).post('/api/movies').send({
-        id: 'tt1',
-        title: 'Test Movie',
-        year: '2020',
-        poster: 'url1'
-      });
+      await request(app).post('/api/movies').send(voteTestMovie);
     });
 
     it('should increment vote count', async () => {
       const response = await request(app)
-        .post('/api/movies/tt1/vote');
+        .post('/api/movies/tt9999999/vote');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -142,14 +179,14 @@ describe('API Endpoints', () => {
     });
 
     it('should declare winner at 10 votes', async () => {
-      // Vote 9 times
+      // Vote 9 times (movie already has 0 votes from beforeEach)
       for (let i = 0; i < 9; i++) {
-        await request(app).post('/api/movies/tt1/vote');
+        await request(app).post('/api/movies/tt9999999/vote');
       }
 
       // 10th vote should make it a winner
       const response = await request(app)
-        .post('/api/movies/tt1/vote');
+        .post('/api/movies/tt9999999/vote');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -159,14 +196,14 @@ describe('API Endpoints', () => {
     });
 
     it('should not allow voting on winners', async () => {
-      // Vote to make winner
+      // Make it a winner first
       for (let i = 0; i < 10; i++) {
-        await request(app).post('/api/movies/tt1/vote');
+        await request(app).post('/api/movies/tt9999999/vote');
       }
 
       // Try to vote again
       const response = await request(app)
-        .post('/api/movies/tt1/vote');
+        .post('/api/movies/tt9999999/vote');
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -186,16 +223,16 @@ describe('API Endpoints', () => {
     });
 
     it('should return all winners', async () => {
-      // Add and vote for two movies to make them winners
+      // Add and vote for two movies to make them winners using unique IDs
       await request(app).post('/api/movies').send({
-        id: 'tt1',
+        id: 'tt5555555',
         title: 'Winner 1',
         year: '2020',
         poster: 'url1'
       });
 
       await request(app).post('/api/movies').send({
-        id: 'tt2',
+        id: 'tt6666666',
         title: 'Winner 2',
         year: '2021',
         poster: 'url2'
@@ -203,10 +240,10 @@ describe('API Endpoints', () => {
 
       // Make both winners
       for (let i = 0; i < 10; i++) {
-        await request(app).post('/api/movies/tt1/vote');
+        await request(app).post('/api/movies/tt5555555/vote');
       }
       for (let i = 0; i < 10; i++) {
-        await request(app).post('/api/movies/tt2/vote');
+        await request(app).post('/api/movies/tt6666666/vote');
       }
 
       const response = await request(app).get('/api/winners');

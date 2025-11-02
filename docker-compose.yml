@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: movie-voting-server
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./server/.env
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DATABASE_PATH=./data/movies.db
+    volumes:
+      # Mount source code for hot reload
+      - ./server/src:/app/src
+      # Mount data directory to persist database
+      - ./server/data:/app/data
+      # Persist node_modules to avoid reinstalling
+      - server-node-modules:/app/node_modules
+    networks:
+      - movie-voting-network
+    command: npm run dev
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: movie-voting-client
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./client/.env
+    volumes:
+      # Mount source code for hot reload
+      - ./client/src:/app/src
+      - ./client/public:/app/public
+      - ./client/index.html:/app/index.html
+      - ./client/vite.config.ts:/app/vite.config.ts
+      # Persist node_modules to avoid reinstalling
+      - client-node-modules:/app/node_modules
+    networks:
+      - movie-voting-network
+    depends_on:
+      - server
+    command: npm run dev -- --host
+
+volumes:
+  server-node-modules:
+  client-node-modules:
+
+networks:
+  movie-voting-network:
+    driver: bridge

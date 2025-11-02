@@ -44,5 +44,5 @@ coverage/
 .cache/
 .parcel-cache/
 
-# Cloudflare
-.cloudflared/
+# Deployment
+.github

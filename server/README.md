@@ -34,6 +34,7 @@ TypeScript Express server with SQLite for the Movie Voting application.
    PORT=3000
    NODE_ENV=development
    DATABASE_PATH=./data/movies.db
+   OMDB_API_KEY=your_omdb_api_key_here
    ```
 
 ## Running the Server
@@ -317,55 +318,3 @@ curl -X POST http://localhost:3000/api/movies/tt0111161/vote
 ```bash
 curl http://localhost:3000/api/winners
 ```
-
-## Deployment to Railway
-
-1. **Install Railway CLI** (optional)
-   ```bash
-   npm install -g @railway/cli
-   ```
-
-2. **Login to Railway**
-   ```bash
-   railway login
-   ```
-
-3. **Initialize project**
-   ```bash
-   railway init
-   ```
-
-4. **Deploy**
-   ```bash
-   railway up
-   ```
-
-5. **Set environment variables** (in Railway dashboard)
-   - `NODE_ENV=production`
-   - `DATABASE_PATH=/app/data/movies.db`
-   - `PORT` (Railway sets this automatically)
-
-### Railway Configuration
-
-Railway will automatically:
-- Detect the Node.js project
-- Run `npm install`
-- Execute `npm run build`
-- Start with `npm start`
-
-For persistent storage on Railway, consider using:
-- Railway Volumes (for SQLite file persistence)
-- Or switch to PostgreSQL (Railway provides this)
-
-## Next Steps
-
-- [x] Add production API routes (`/api/movies`, `/api/winners`, etc.)
-- [x] Implement OMDb API integration for movie search
-- [ ] Add rate limiting and vote throttling
-- [ ] Implement username/session management
-- [ ] Add WebSocket or polling for live updates
-- [ ] Switch to Turso DB for production deployment
-
-## License
-
-ISC
